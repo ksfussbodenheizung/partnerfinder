@@ -25,15 +25,23 @@ async function load(){
  const current=++generation;controller?.abort();controller=new AbortController();
  window.partnerfinderSetPartners([]);$('google-reload').disabled=true;status('Aktuelle Partnerliste wird geladen …');
  try{
-  const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET+'/values:batchGetByDataFilter',{
-   method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},cache:'no-store',signal:controller.signal,
-   body:JSON.stringify({dataFilters:[{gridRange:{sheetId:49701269}}],majorDimension:'ROWS',valueRenderOption:'FORMATTED_VALUE'})
-  });
-  if(current!==generation)return;
-  const body=await response.json().catch(()=>({}));if(current!==generation)return;
-  if(!response.ok){const message=apiError(response,body);if(response.status===401){fail(message);return}throw Error(message)}
-  if(!Array.isArray(body.valueRanges)||!body.valueRanges.length)throw Error('Tabellenblatt mit gid 49701269 wurde nicht gefunden.');
-  const data=PartnerData.fromRows(body.valueRanges[0].valueRange?.values||[]);
+  // Resolve the configured numeric gid without requiring write scopes.
+  const request=async path=>{
+   const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET+path,{
+    method:'GET',headers:{Authorization:'Bearer '+token},cache:'no-store',signal:controller.signal
+   });
+   const body=await response.json().catch(()=>({}));
+   if(current!==generation)throw Object.assign(new Error('Superseded'),{name:'AbortError'});
+   if(!response.ok){const message=apiError(response,body);if(response.status===401)fail(message);throw Error(message)}
+   return body;
+  };
+  const metadata=await request('?fields=sheets.properties(sheetId,title)');
+  const sheet=metadata.sheets?.find(s=>s.properties?.sheetId===49701269);
+  if(!sheet)throw Error('Tabellenblatt mit gid 49701269 wurde nicht gefunden.');
+  const range="'"+sheet.properties.title.replace(/'/g,"''")+"'";
+  const body=await request('/values:batchGet?ranges='+encodeURIComponent(range)+'&majorDimension=ROWS&valueRenderOption=FORMATTED_VALUE');
+  if(!Array.isArray(body.valueRanges)||!body.valueRanges.length)throw Error('Google hat keinen Tabellenbereich zurückgegeben.');
+  const data=PartnerData.fromRows(body.valueRanges[0].values||[]);
   window.partnerfinderSetPartners(data);status(data.length+' aktive Partner geladen · '+new Date().toLocaleTimeString('de-DE'));
  }catch(e){if(current!==generation||e.name==='AbortError')return;status(e.message||'Netzwerkfehler beim Laden der Tabelle. Bitte erneut versuchen.');}
  finally{if(current===generation)$('google-reload').disabled=!token;}
