@@ -3,7 +3,19 @@ const $=id=>document.getElementById(id),msg=t=>$('message').textContent=t;
 let map,geocoder,siteMarker,partnerMarkers=[],partners=[],site=null,visible=false;
 const storageKey='pf2_',get=k=>localStorage.getItem(storageKey+k)||'',put=(k,v)=>localStorage.setItem(storageKey+k,v);
 $('key').value=get('key');$('sheet').value=get('sheet');
-function readMapsAddress(){const raw=new URLSearchParams(location.search).get('maps');if(!raw)return '';try{const u=new URL(raw);let q=u.searchParams.get('query')||u.searchParams.get('q')||'';if(q)return q;const m=u.pathname.match(/\/(?:place|search)\/([^/]+)/);if(m)return decodeURIComponent(m[1]).replace(/\+/g,' ');return ''}catch{return ''}}
+function readMapsAddress(){
+ const params=new URLSearchParams(location.search);
+ if(params.get('address'))return params.get('address').trim();
+ const raw=params.get('maps');if(!raw)return '';
+ try{
+  const u=new URL(raw);
+  const q=u.searchParams.get('query')||u.searchParams.get('q')||u.searchParams.get('destination');
+  if(q)return q;
+  const match=u.pathname.match(/\/(?:place|search)\/([^/]+)/);
+  if(match)return decodeURIComponent(match[1]).replace(/\+/g,' ');
+  return '';
+ }catch{return ''}
+}
 $('address').value=readMapsAddress();
 function loadMap(){const key=$('key').value.trim();if(!key){msg('Bitte zuerst unter Einrichtung den Google Maps API-Schlüssel eintragen.');$('setup').open=true;return}if(window.google?.maps){initMap();return}const old=document.getElementById('gmaps');if(old)old.remove();const s=document.createElement('script');s.id='gmaps';s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&callback=partnerfinderInit&v=weekly';s.async=true;s.onerror=()=>msg('Google Maps konnte nicht geladen werden. API-Schlüssel, Abrechnung und Domain-Beschränkung prüfen.');document.head.appendChild(s)}
 window.partnerfinderInit=()=>initMap();
