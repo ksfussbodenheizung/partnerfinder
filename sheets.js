@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const CLIENT_ID='105285009467-kmdb5vsfte5606vts0qvrtrn2dshi010.apps.googleusercontent.com';
 const SCOPE='https://www.googleapis.com/auth/spreadsheets.readonly';
-const SHEET='1NmysOOv7AADvPH8ChbGtU4-0JWTGvz9S';
+const SHEET='1JjjakO6xFNbP0zEXXRcnHQhSeQsF79crtNjn2znZv4I';
 const $=id=>document.getElementById(id),status=t=>$('google-status').textContent=t;
 let client,token='',expires=0,generation=0,controller,timer;
 const remembered=()=>localStorage.getItem('pf3_authorized')==='yes';
@@ -14,12 +14,12 @@ async function load(){
  try{
   const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET+'/values:batchGetByDataFilter',{
    method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},cache:'no-store',signal:controller.signal,
-   body:JSON.stringify({dataFilters:[{gridRange:{sheetId:1712141284}}],majorDimension:'ROWS',valueRenderOption:'FORMATTED_VALUE'})
+   body:JSON.stringify({dataFilters:[{gridRange:{sheetId:49701269}}],majorDimension:'ROWS',valueRenderOption:'FORMATTED_VALUE'})
   });
   if(current!==generation)return;
   if(!response.ok){if(response.status===401)throw Error('Sitzung abgelaufen. Bitte erneut verbinden.');if(response.status===403)throw Error('Kein Tabellenzugriff. Google-Konto, Tabellenfreigabe und aktivierte Sheets API prüfen.');if(response.status===404)throw Error('Tabelle nicht gefunden oder nicht freigegeben.');throw Error('Sheets konnte nicht geladen werden (HTTP '+response.status+').');}
   const body=await response.json();if(current!==generation)return;
-  if(!Array.isArray(body.valueRanges)||!body.valueRanges.length)throw Error('Tabellenblatt mit gid 1712141284 wurde nicht gefunden.');
+  if(!Array.isArray(body.valueRanges)||!body.valueRanges.length)throw Error('Tabellenblatt mit gid 49701269 wurde nicht gefunden.');
   const data=PartnerData.fromRows(body.valueRanges[0].valueRange?.values||[]);
   window.partnerfinderSetPartners(data);status(data.length+' aktive Partner geladen · '+new Date().toLocaleTimeString('de-DE'));
  }catch(e){if(current!==generation||e.name==='AbortError')return;fail(e.message||'Verbindung fehlgeschlagen. Bitte erneut versuchen.');}
